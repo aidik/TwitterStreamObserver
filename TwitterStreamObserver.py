@@ -68,11 +68,11 @@ def send_to_slack(status, toxiReport):
     logging.info("Slack notification status code: " + str(slack_response.status_code))
 
 
-def console_log(response):
+def console_log(status, response):
     response = response[0]
     logging.info("----------------")
     logging.info(response["text"].replace('\n', ''))
-    logging.info("https://www.reddit.com" + comment.permalink)
+    logging.info("https://twitter.com/twitter/status/" + status.id)
     logging.info("identity_attack:\t" + json.dumps(response["identity_attack"]))
     logging.info("insult:\t\t" + json.dumps(response["insult"]))
     logging.info("obscene:\t\t" + json.dumps(response["obscene"]))
@@ -88,7 +88,7 @@ def process_tweet(status):
     toxiReport = "Twitter status possibly containing: "
     report = False;
     json_res = response.json()
-    console_log(json_res)
+    console_log(status, json_res)
 
     if json_res[0]["identity_attack"][0] != False:
         report = True
@@ -171,7 +171,7 @@ logging.info("MYSQL_PASSWORD: " + os.environ['MYSQL_PASSWORD'] + " type: " + typ
 class TweetPrinter(tweepy.StreamingClient):
 
     def on_tweet(self, status):
-        print(status.text)
+        process_tweet(status)
 
 # Initialize instance of the subclass
 printer = TweetPrinter(bearer_token=os.environ['TWITTER_API_BEARER_TOKEN'], wait_on_rate_limit= True)
