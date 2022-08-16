@@ -13,7 +13,7 @@ import hashlib
 
 logging.basicConfig(level=logging.INFO)
 
-def save_to_db(comment, response, report):
+def save_to_db(status, response, report):
     cnx = mysql.connector.connect(
         host=os.environ['MYSQL_HOST'],
         port=os.environ['MYSQL_PORT'],
@@ -23,25 +23,19 @@ def save_to_db(comment, response, report):
 
     selection_cursor = cnx.cursor(buffered=True)
 
-    hashMe = comment.author.name + comment.permalink + comment.body
-    hash = hashlib.sha256(hashMe.encode()).hexdigest()
-    print(hash)
-
-    select_hash = ("SELECT * FROM comments WHERE hash=%s")
-    selection_cursor.execute(select_hash, [hash])
+    select_id = ("SELECT * FROM tweets WHERE tweetID=%s")
+    selection_cursor.execute(select_id, [status.id])
 
     if selection_cursor.rowcount > 0:
-        print("This comment is already svaed")
+        print("This Tweet is already svaed")
     else:
         insertion_cursor = cnx.cursor(buffered=True)
         response = response[0] 
-        add_comment = ("INSERT INTO comments (hash, authorName, authorFullName, body, permlink, identityAttack, insult, obscene, severeToxicity, sexualExplicit, threat, toxicity, isToxic) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+        add_comment = ("INSERT INTO tweets (tweetID, authorID, body, identityAttack, insult, obscene, severeToxicity, sexualExplicit, threat, toxicity, isToxic) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
         comment_data = (
-            hash,
-            comment.author.name,
-            comment.author.fullname,
-            comment.body,
-            "https://www.reddit.com" + comment.permalink,
+            status.id,
+            status.author_id,
+            status.text,
             response["identity_attack"][0],
             response["insult"][0],
             response["obscene"][0],
@@ -62,14 +56,14 @@ def save_to_db(comment, response, report):
 
 def send_to_telegram(status, toxiReport):
     telegram_url = os.environ['TELEGRAM_URL']
-    telegram_post = {"chat_id": os.environ['TELEGRAM_CHAT_ID'], "text":  toxiReport[:-2] + "! Please check it out.\n\n" + "https://twitter.com/sumlenny/status/" + status.id + "\n\n-----\n" + status.text}
+    telegram_post = {"chat_id": os.environ['TELEGRAM_CHAT_ID'], "text":  toxiReport[:-2] + "! Please check it out.\n\n" + "https://twitter.com/twitter/status/" + status.id + "\n\n-----\n" + status.text}
     telegram_response = requests.post(telegram_url, json=telegram_post)
     logging.info("Telegram notification status code: " + str(telegram_response.status_code))
 
 
-def send_to_slack(comment, toxiReport):
+def send_to_slack(status, toxiReport):
     slack_url = os.environ['SLACK_URL']
-    slack_post = {"text":  toxiReport[:-2] + "! Please check it out.\n\n" + "https://www.reddit.com" + comment.permalink + "\n\n-----\n" + comment.body}
+    slack_post = {"text":  toxiReport[:-2] + "! Please check it out.\n\n" + "https://twitter.com/twitter/status/" + status.id + "\n\n-----\n" + status.text}
     slack_response = requests.post(slack_url, json=slack_post)
     logging.info("Slack notification status code: " + str(slack_response.status_code))
 
@@ -128,14 +122,11 @@ def process_tweet(status):
         if report_to_telegram == True:
             send_to_telegram(status, toxiReport)
 
-#        if report_to_slack == True:
-#            send_to_slack(status, toxiReport)
+        if report_to_slack == True:
+            send_to_slack(status, toxiReport)
    
-#    if record_to_db == True:
-#        save_to_db(status, json_res, report)
-
-
-
+    if record_to_db == True:
+        save_to_db(status, json_res, report)
 
 
 skip_existing_comments = False
@@ -156,8 +147,6 @@ if os.environ['RECORD_TO_DB'] == "True":
     record_to_db = True    
 
 
-logging.info("TWITTER_API_KEY: " + os.environ['TWITTER_API_KEY'] + " type: " + type(os.environ['TWITTER_API_KEY']).__name__)
-logging.info("TWITTER_API_KEY_SECRET: " + os.environ['TWITTER_API_KEY_SECRET'] + " type: " + type(os.environ['TWITTER_API_KEY_SECRET']).__name__)
 logging.info("TWITTER_API_BEARER_TOKEN: " + os.environ['TWITTER_API_BEARER_TOKEN'] + " type: " + type(os.environ['TWITTER_API_BEARER_TOKEN']).__name__)
 logging.info("SKIP_EXISTING_COMMENTS: " + os.environ['SKIP_EXISTING_COMMENTS'] + " type: " + type(os.environ['SKIP_EXISTING_COMMENTS']).__name__)
 logging.info("skip_existing_comments: " + str(skip_existing_comments) + " type: " + type(skip_existing_comments).__name__)
