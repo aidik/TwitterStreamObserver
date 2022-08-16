@@ -31,7 +31,7 @@ def save_to_db(status, response, report):
     else:
         insertion_cursor = cnx.cursor(buffered=True)
         response = response[0] 
-        add_comment = ("INSERT INTO tweets (tweetID, authorID, body, identityAttack, insult, obscene, severeToxicity, sexualExplicit, threat, toxicity, isToxic) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+        add_comment = ("INSERT INTO tweets (tweetID, authorID, body, identityAttack, insult, obscene, severeToxicity, sexualExplicit, threat, toxicity, isToxic) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
         comment_data = (
             status.id,
             status.author_id,
@@ -56,14 +56,14 @@ def save_to_db(status, response, report):
 
 def send_to_telegram(status, toxiReport):
     telegram_url = os.environ['TELEGRAM_URL']
-    telegram_post = {"chat_id": os.environ['TELEGRAM_CHAT_ID'], "text":  toxiReport[:-2] + "! Please check it out.\n\n" + "https://twitter.com/twitter/status/" + status.id + "\n\n-----\n" + status.text}
+    telegram_post = {"chat_id": os.environ['TELEGRAM_CHAT_ID'], "text":  toxiReport[:-2] + "! Please check it out.\n\n" + "https://twitter.com/twitter/status/" + str(status.id) + "\n\n-----\n" + status.text}
     telegram_response = requests.post(telegram_url, json=telegram_post)
     logging.info("Telegram notification status code: " + str(telegram_response.status_code))
 
 
 def send_to_slack(status, toxiReport):
     slack_url = os.environ['SLACK_URL']
-    slack_post = {"text":  toxiReport[:-2] + "! Please check it out.\n\n" + "https://twitter.com/twitter/status/" + status.id + "\n\n-----\n" + status.text}
+    slack_post = {"text":  toxiReport[:-2] + "! Please check it out.\n\n" + "https://twitter.com/twitter/status/" + str(status.id) + "\n\n-----\n" + status.text}
     slack_response = requests.post(slack_url, json=slack_post)
     logging.info("Slack notification status code: " + str(slack_response.status_code))
 
@@ -72,7 +72,7 @@ def console_log(status, response):
     response = response[0]
     logging.info("----------------")
     logging.info(response["text"].replace('\n', ''))
-    logging.info("https://twitter.com/twitter/status/" + status.id)
+    logging.info("https://twitter.com/twitter/status/" + str(status.id))
     logging.info("identity_attack:\t" + json.dumps(response["identity_attack"]))
     logging.info("insult:\t\t" + json.dumps(response["insult"]))
     logging.info("obscene:\t\t" + json.dumps(response["obscene"]))
