@@ -8,7 +8,6 @@ import json
 import os
 import logging
 import mysql.connector
-import hashlib
 
 
 logging.basicConfig(level=logging.INFO)
@@ -31,11 +30,12 @@ def save_to_db(status, response, report):
     else:
         insertion_cursor = cnx.cursor(buffered=True)
         response = response[0] 
-        add_comment = ("INSERT INTO tweets (tweetID, authorID, body, identityAttack, insult, obscene, severeToxicity, sexualExplicit, threat, toxicity, isToxic) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+        add_comment = ("INSERT INTO tweets (tweetID, authorID, body, lang, identityAttack, insult, obscene, severeToxicity, sexualExplicit, threat, toxicity, isToxic) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
         comment_data = (
             status.id,
             status.author_id,
             status.text,
+            status.lang,
             response["identity_attack"][0],
             response["insult"][0],
             response["obscene"][0],
@@ -177,7 +177,7 @@ class TweetPrinter(tweepy.StreamingClient):
 printer = TweetPrinter(bearer_token=os.environ['TWITTER_API_BEARER_TOKEN'], wait_on_rate_limit= True)
  
 printer.filter(
-    tweet_fields = ["author_id", "created_at", "source", "text", "conversation_id", "referenced_tweets"])
+    tweet_fields = ["author_id", "created_at", "source", "text", "conversation_id", "referenced_tweets", "lang"])
     #user_fields = ["username", "name", "url"],
     #expansions = ["author_id"])
 
